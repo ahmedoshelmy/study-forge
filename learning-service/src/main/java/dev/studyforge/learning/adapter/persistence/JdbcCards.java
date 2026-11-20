@@ -56,7 +56,9 @@ class JdbcCards implements Cards {
             s.repetitions(),
             s.easeFactor(),
             s.intervalDays(),
-            s.dueOn());
+            s.dueOn(),
+            s.stability(),
+            s.difficulty());
     return toDomain(rows.save(row));
   }
 
@@ -86,6 +88,12 @@ class JdbcCards implements Cards {
         ZoneId.of(row.zoneId()),
         row.front(),
         row.back(),
-        new CardSchedule(row.repetitions(), row.easeFactor(), row.intervalDays(), row.dueOn()));
+        new CardSchedule(
+            row.repetitions(),
+            row.easeFactor(),
+            row.intervalDays(),
+            row.dueOn(),
+            row.stability(),
+            row.difficulty()));
   }
 }

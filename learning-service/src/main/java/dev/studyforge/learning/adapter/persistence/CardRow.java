@@ -20,4 +20,6 @@ record CardRow(
     int repetitions,
     double easeFactor,
     int intervalDays,
-    LocalDate dueOn) {}
+    LocalDate dueOn,
+    double stability,
+    double difficulty) {}
