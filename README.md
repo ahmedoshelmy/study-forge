@@ -19,7 +19,9 @@ Actuator/Micrometer/OpenTelemetry · springdoc OpenAPI · React + Vite + TypeScr
   roadmap progress and emits `ItemCompleted`.
 - **Cards and review** – cards hang off a roadmap (optionally an item). "Review now" lists the cards due today
   in the learner's own time zone; the web card flipper shows the front, flips, and offers grade buttons 0–5.
-- **SM-2 scheduling** – behind a `SchedulingStrategy` interface so FSRS can be added later (ADR 0004).
+- **SM-2 or FSRS scheduling** – both behind one `SchedulingStrategy` interface (ADR 0004). SM-2 is the default;
+  `STUDYFORGE_SCHEDULER=fsrs` switches to FSRS (FSRS-4.5 formulas, published default weights), which keeps a
+  stability and difficulty per card. Each review log row records which strategy scheduled it.
 - **Insights** – streak (consecutive learner-local days with a review), retention by interval bucket, minutes per
   day for the last week, due-card forecast, total reviews; REST plus a Server-Sent Events stream that pushes
   fresh stats after every applied event.
@@ -80,15 +82,19 @@ Development:
 cd web && npm ci && npm run dev   # proxies /api to :8080 and /api/insights to :8081
 ```
 
-Each service serves its OpenAPI document at `/v3/api-docs` and Swagger UI at `/swagger-ui.html`, plus
-`/actuator/health`, `/actuator/prometheus`.
+Swagger UI goes through the web proxy: http://localhost:8095/api/docs (learning) and
+http://localhost:8095/api/insights/docs (insights); the specs are at `/api/openapi` and `/api/insights/openapi`.
+Each service also serves `/actuator/health` and `/actuator/prometheus` on its own port.
 
 ## Tests
 
 - **Unit**: SM-2 examples (first steps, lapses, ease changes), roadmap progress, streak rules over learner-local
   days (today not over yet, a missed day resets the current but not the longest streak), stats projection.
-- **Property (jqwik)**: for any schedule and any grade ≥ 3 the interval never decreases; the ease never drops
-  below 1.3.
+- **Property (jqwik)**: SM-2 – for any schedule and any grade ≥ 3 the interval never decreases; the ease never
+  drops below 1.3. FSRS – difficulty stays within 1–10, recalling a due card never lowers stability, forgetting
+  never raises it, the next review is always after the review day.
+- **FSRS examples**: initial stability per rating, recall is 90% at the target interval, an overdue recall grows
+  stability more than an on-time one, Hard ≤ Good < Easy, an SM-2 card keeps its progress when switching.
 - **Architecture (ArchUnit)**: the domain depends on neither Spring nor adapters; application never depends on
   adapters.
 - **Contract**: every field of each event record is a required property of the right type in its JSON Schema,
@@ -114,14 +120,33 @@ Each service serves its OpenAPI document at `/v3/api-docs` and Swagger UI at `/s
   to save memory locally. See ADR 0003.
 - **Time zones are domain logic.** "Due today" and "streak" use the learner's zone and an injected `Clock`, so
   a review at 00:30 Cairo time counts for the right day and tests can pin the clock.
-- **Strategy for the algorithm.** SM-2 today, FSRS later, without touching REST or events. See ADR 0004.
+- **Strategy for the algorithm.** SM-2 and FSRS sit behind the same port; switching is configuration, and REST,
+  events and the review flow did not change when FSRS arrived (one additive Flyway migration for its state).
+  A card SM-2 already scheduled joins FSRS with its current interval as stability. See ADR 0004.
 - **Small footprint.** Redpanda in dev mode (256 MB), JVMs at `-XX:MaxRAMPercentage=60` under 512 MB limits,
   one Dockerfile for both services with BuildKit cache mounts (`sharing=locked`) for the Maven repository.
+
+## Interview talking points
+
+- *Why Kafka here and RabbitMQ elsewhere?* The insights are projections of a history; a log you can replay from
+  offset zero rebuilds a read model, and keying by learner keeps per-learner order. Work queues and commands
+  fit a broker like RabbitMQ better.
+- *How do you avoid losing or double-counting events?* Transactional outbox on the producer side (the review
+  and its event commit together), idempotent producer, and a consumer that records the event id in the same
+  transaction as the projection. Testcontainers proves a duplicate is applied once and a poison message lands
+  in the DLT.
+- *How do you evolve event contracts?* Additive only, checked by a contract test against JSON Schemas; unknown
+  fields are ignored by consumers.
+- *Show me a clean extension point.* FSRS was added as a second `SchedulingStrategy` with one additive
+  migration; the controller, the events and the review service did not change, and property tests pin both
+  algorithms' invariants.
+- *Where do time zones bite?* "Due today" and streaks are the learner's days, not the server's; an injected
+  `Clock` lets tests review a card after midnight in Cairo while UTC is still on the previous day, and check
+  it counts for the right one.
 
 ## Not done yet (honest list)
 
 - Redis cache for the "due today" query (planned stretch; the query is an indexed lookup today).
-- FSRS strategy (interface only).
 - Screenshot in this README.
 
 ## Extracted from Lingo
