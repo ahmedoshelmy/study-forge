@@ -1,0 +1,9 @@
+**/target
+web
+.git
+.github
+docs
+scripts
+*.md
+.env
+.jqwik-database

@@ -1,0 +1,116 @@
+name: study-forge
+
+services:
+  redpanda:
+    image: docker.io/redpandadata/redpanda:v24.3.6
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=256M
+      - --overprovisioned
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:19092
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: learning
+      POSTGRES_USER: ${POSTGRES_USER:-studyforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-studyforge}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/postgres-init.sql:/docker-entrypoint-initdb.d/01-insights.sql:ro,z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d insights"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+
+  learning:
+    build:
+      context: .
+      args:
+        SERVICE: learning-service
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/learning
+      DATABASE_USER: ${POSTGRES_USER:-studyforge}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-studyforge}
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health/readiness | grep -q UP"]
+      interval: 5s
+      timeout: 3s
+      start_period: 40s
+      retries: 30
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  insights:
+    build:
+      context: .
+      args:
+        SERVICE: insights-service
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/insights
+      DATABASE_USER: ${POSTGRES_USER:-studyforge}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-studyforge}
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health/readiness | grep -q UP"]
+      interval: 5s
+      timeout: 3s
+      start_period: 40s
+      retries: 30
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  web:
+    build: ./web
+    ports:
+      - "${WEB_PORT:-8095}:80"
+    depends_on:
+      learning:
+        condition: service_healthy
+      insights:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz | grep -q ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+
+volumes:
+  pgdata:
