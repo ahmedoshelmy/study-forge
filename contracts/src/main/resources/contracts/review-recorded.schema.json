@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyforge.example.com/contracts/review-recorded.schema.json",
+  "title": "ReviewRecorded",
+  "description": "A learner graded one card. Topic review-events, key = learnerId.",
+  "type": "object",
+  "required": ["eventId", "learnerId", "zoneId", "roadmapId", "cardId", "grade", "previousIntervalDays",
+    "intervalDays", "easeFactor", "nextDueOn", "durationSeconds", "reviewedAt"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "learnerId": { "type": "string", "minLength": 1 },
+    "zoneId": { "type": "string", "minLength": 1 },
+    "roadmapId": { "type": "string", "format": "uuid" },
+    "cardId": { "type": "string", "format": "uuid" },
+    "grade": { "type": "integer", "minimum": 0, "maximum": 5 },
+    "previousIntervalDays": { "type": "integer", "minimum": 0 },
+    "intervalDays": { "type": "integer", "minimum": 1 },
+    "easeFactor": { "type": "number", "minimum": 1.3 },
+    "nextDueOn": { "type": "string", "format": "date" },
+    "durationSeconds": { "type": "integer", "minimum": 0 },
+    "reviewedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

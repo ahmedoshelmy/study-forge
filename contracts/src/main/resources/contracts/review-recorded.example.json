@@ -1,0 +1,14 @@
+{
+  "eventId": "6f1c2a9e-3b7d-4c55-9a0e-2d4b8f1e7a01",
+  "learnerId": "demo-learner",
+  "zoneId": "Africa/Cairo",
+  "roadmapId": "0b9d8c7e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+  "cardId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "grade": 4,
+  "previousIntervalDays": 1,
+  "intervalDays": 6,
+  "easeFactor": 2.5,
+  "nextDueOn": "2026-11-26",
+  "durationSeconds": 42,
+  "reviewedAt": "2026-11-20T18:30:00Z"
+}

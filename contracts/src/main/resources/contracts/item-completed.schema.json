@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studyforge.example.com/contracts/item-completed.schema.json",
+  "title": "ItemCompleted",
+  "description": "A learner finished one roadmap item. Topic progress-events, key = learnerId.",
+  "type": "object",
+  "required": ["eventId", "learnerId", "zoneId", "roadmapId", "itemId", "itemTitle", "minutesSpent",
+    "progressPercent", "completedAt"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "learnerId": { "type": "string", "minLength": 1 },
+    "zoneId": { "type": "string", "minLength": 1 },
+    "roadmapId": { "type": "string", "format": "uuid" },
+    "itemId": { "type": "string", "format": "uuid" },
+    "itemTitle": { "type": "string" },
+    "minutesSpent": { "type": "integer", "minimum": 0 },
+    "progressPercent": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "completedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}
