@@ -1,9 +1,16 @@
 # Study Forge
 
+[![CI](https://github.com/ahmedoshelmy/study-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmedoshelmy/study-forge/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Java 25](https://img.shields.io/badge/Java-25-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Spring Boot 4.2](https://img.shields.io/badge/Spring_Boot-4.2-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+
+Part of the [systems portfolio](https://github.com/ahmedoshelmy/systems-portfolio).
+
 **Learning roadmaps and spaced-repetition review, with progress analytics streamed over Kafka.**
 
 Break something you want to learn into a roadmap (stages, then items with an estimated time), attach flash cards,
-and review what is due today. Each review is graded 0–5 and rescheduled with SM-2. Every review and every
+and review what is due today. Each review is graded 0–5 and rescheduled with SM-2 or FSRS. Every review and every
 completed item becomes an event; a separate insights service turns that stream into your streak, a retention
 curve, weekly study minutes and a forecast of how many cards fall due in the coming days, pushed live to the
 dashboard.
@@ -72,12 +79,27 @@ Needs Docker (or Podman) with Compose.
 ```bash
 cp .env.example .env              # optional, placeholders only
 docker compose up -d --build --wait
-open http://localhost:8095        # web UI ("Start with the sample roadmap")
 ./scripts/smoke.sh                # roadmap + 3 cards, 2 reviews, polls insights -> "SMOKE PASS"
-docker compose down -v
+docker compose down -v            # when you are done
 ```
 
-Development:
+Then open http://localhost:8095 in a browser and press "Start with the sample roadmap".
+
+## Run in Codespaces
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/ahmedoshelmy/study-forge)
+
+The repo carries a dev container (`.devcontainer/`: JDK 25, Node 22, Docker-in-Docker), so it opens as-is in GitHub
+Codespaces or VS Code Dev Containers and pre-fetches the Maven and npm dependencies on create. Then one command:
+
+```bash
+docker compose up -d --build --wait
+```
+
+Open the **Web** port (8095) from the Ports tab (it proxies both services' APIs). The stack (Postgres, Redpanda,
+two JVMs, web) fits the 8 GB machine the dev container asks for.
+
+## Development
 
 ```bash
 ./mvnw verify                     # Spotless, -Xlint:all -Werror, unit + property + ArchUnit + contract + Testcontainers
@@ -148,7 +170,12 @@ Each service also serves `/actuator/health` and `/actuator/prometheus` on its ow
 
 ## Not done yet (honest list)
 
-- Redis cache for the "due today" query (planned stretch; the query is an indexed lookup today).
+- **No sign-in.** The learner is a free-text id the web app keeps in the browser; every API trusts it.
+- **Live stats fan out per instance.** SSE emitters are in memory, so with several insights-service instances a
+  dashboard only hears about its instance's partitions; a scaled deployment would broadcast over Redis pub/sub.
+- **Redis cache for "due today"** – planned stretch; the query is an indexed lookup today.
+- **FSRS weights are the published defaults**, not fitted to the learner's own review history.
+- **No cloud deploy template**; it runs with Docker Compose only.
 
 ## Extracted from Lingo
 
