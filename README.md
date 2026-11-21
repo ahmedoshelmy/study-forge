@@ -11,7 +11,9 @@ dashboard.
 Java 25 · Spring Boot 4.2 · Spring Kafka (Redpanda) · Spring Modulith outbox · Postgres + Flyway · Spring Data JDBC ·
 Actuator/Micrometer/OpenTelemetry · springdoc OpenAPI · React + Vite + TypeScript.
 
-> Screenshot coming. All data in the app, tests and seeds is synthetic.
+![Study Forge: a card under review, the sample roadmap at 40% and the live insights dashboard (streak, study minutes, cards due, recall rate)](docs/screenshot.png)
+
+All data in the app, tests and seeds is synthetic.
 
 ## What it does
 
@@ -147,7 +149,6 @@ Each service also serves `/actuator/health` and `/actuator/prometheus` on its ow
 ## Not done yet (honest list)
 
 - Redis cache for the "due today" query (planned stretch; the query is an indexed lookup today).
-- Screenshot in this README.
 
 ## Extracted from Lingo
 
